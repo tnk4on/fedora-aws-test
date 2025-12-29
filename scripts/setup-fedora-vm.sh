@@ -313,6 +313,10 @@ echo "=== registries.conf ==="
 cat ~/.config/containers/registries.conf
 echo "=== containers.conf ==="
 cat ~/.config/containers/containers.conf
+
+echo "=== Enabling Podman socket for docker-outside-of-docker ==="
+systemctl --user enable --now podman.socket
+ls -la /run/user/$(id -u)/podman/podman.sock
 ENDSSH
 
 # Export VM information

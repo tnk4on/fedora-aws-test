@@ -66,10 +66,30 @@ run_test "Dockerfile" "tests/dockerfile" "podman exec \"\$CONTAINER_ID\" curl --
 echo -e "\n${YELLOW}=== Test: Features (Go) ===${NC}"
 echo "⏭️ Features (Go) test skipped for debugging"
 
-# Docker in Docker test - skipped
-echo -e "\n${YELLOW}=== Test: Docker in Docker ===${NC}"
-echo "⏭️ Docker in Docker test skipped"
-echo "Reason: docker-in-docker feature requires systemd which is not available in Podman containers"
+# Docker outside of Docker test - uses Podman socket
+echo -e "\n${YELLOW}=== Test: Docker outside of Docker ===${NC}"
+ssh $SSH_OPTS -i "$SSH_KEY_PATH" fedora@"$VM_IP" <<'ENDSSH'
+set -e
+export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+cd ~/podman-devcontainer-test/tests/docker-in-docker
+echo "=== Building Docker outside of Docker ==="
+OUTPUT=$(devcontainer up --workspace-folder . --docker-path podman 2>&1) || {
+  echo "devcontainer up failed:"
+  echo "$OUTPUT"
+  exit 1
+}
+echo "$OUTPUT"
+CONTAINER_ID=$(echo "$OUTPUT" | grep -o '"containerId":"[^"]*"' | cut -d'"' -f4 | head -1)
+if [ -z "$CONTAINER_ID" ]; then
+  echo "Error: Failed to get container ID"
+  exit 1
+fi
+echo "Testing docker command inside container..."
+podman exec "$CONTAINER_ID" docker run --rm hello-world
+podman rm -f "$CONTAINER_ID" || true
+echo "✅ Docker outside of Docker PASSED"
+ENDSSH
 
 run_test "Sample Python" "tests/sample-python" "podman exec \"\$CONTAINER_ID\" python3 --version"
 run_test "Sample Node.js" "tests/sample-node" "podman exec \"\$CONTAINER_ID\" node --version"

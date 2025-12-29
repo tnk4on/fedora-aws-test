@@ -256,6 +256,10 @@ jobs:
 label = false
 EOF
             
+            # Enable Podman socket for docker-outside-of-docker
+            systemctl --user enable --now podman.socket
+            ls -la /run/user/$(id -u)/podman/podman.sock
+            
             git clone https://github.com/tnk4on/podman-devcontainer-test.git
           '
 
@@ -299,15 +303,31 @@ EOF
         run: |
           echo "⏭️ Features (Go) test skipped for debugging"
 
-      # Docker in Docker test is skipped because:
-      # 1. The docker-in-docker feature requires systemd to start Docker daemon
-      # 2. systemd is not available in Podman containers without additional configuration
-      # 3. This is a known limitation when using Podman as the container runtime
-      - name: Test - Docker in Docker (Skipped)
+      # Docker outside of Docker test - uses Podman socket
+      - name: Test - Docker outside of Docker
         run: |
-          echo "⏭️ Docker in Docker test skipped"
-          echo "Reason: docker-in-docker feature requires systemd which is not available in Podman containers"
-          echo "This is a known limitation of using Podman as the container runtime"
+          ssh ${{ env.SSH_OPTS }} -i ~/.ssh/ec2_key fedora@${{ env.VM_IP }} '
+            set -e
+            export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"
+            export XDG_RUNTIME_DIR=/run/user/$(id -u)
+            cd ~/podman-devcontainer-test/tests/docker-in-docker
+            echo "=== Building Docker outside of Docker ==="
+            OUTPUT=$(devcontainer up --workspace-folder . --docker-path podman 2>&1) || {
+              echo "devcontainer up failed:"
+              echo "$OUTPUT"
+              exit 1
+            }
+            echo "$OUTPUT"
+            CONTAINER_ID=$(echo "$OUTPUT" | grep -o "\"containerId\":\"[^\"]*\"" | cut -d"\"" -f4 | head -1)
+            if [ -z "$CONTAINER_ID" ]; then
+              echo "Error: Failed to get container ID"
+              exit 1
+            fi
+            echo "Testing docker command inside container..."
+            podman exec "$CONTAINER_ID" docker run --rm hello-world
+            podman rm -f "$CONTAINER_ID" || true
+            echo "✅ Docker outside of Docker PASSED"
+          '
 
       - name: Test - Sample Python
         run: |
