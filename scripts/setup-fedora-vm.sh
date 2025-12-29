@@ -302,7 +302,17 @@ podman-docker --version || echo "podman-docker installed"
 echo "=== Podman configuration ==="
 mkdir -p ~/.config/containers
 echo 'unqualified-search-registries = ["docker.io"]' > ~/.config/containers/registries.conf
+
+# Disable SELinux labeling for containers (required for Fedora 43+ kernel)
+cat >> ~/.config/containers/containers.conf << EOF
+[containers]
+label = false
+EOF
+
+echo "=== registries.conf ==="
 cat ~/.config/containers/registries.conf
+echo "=== containers.conf ==="
+cat ~/.config/containers/containers.conf
 ENDSSH
 
 # Export VM information

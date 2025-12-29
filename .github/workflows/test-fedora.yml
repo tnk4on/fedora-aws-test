@@ -250,6 +250,12 @@ jobs:
             mkdir -p ~/.config/containers
             echo "unqualified-search-registries = [\"docker.io\"]" > ~/.config/containers/registries.conf
             
+            # Disable SELinux labeling for containers (required for Fedora 43+ kernel)
+            cat >> ~/.config/containers/containers.conf << EOF
+[containers]
+label = false
+EOF
+            
             git clone https://github.com/tnk4on/podman-devcontainer-test.git
           '
 
