@@ -52,9 +52,23 @@ cleanup_vm() {
     fi
 }
 
-# Set trap for cleanup (only if not sourced)
+# Cleanup on error or interrupt (not on normal exit when run directly)
+# When sourced by test-fedora-aws.sh, no trap is set here (parent handles cleanup)
+SETUP_FAILED=false
+cleanup_on_error() {
+    if [ "$SETUP_FAILED" = "true" ]; then
+        cleanup_vm
+    fi
+}
+
+# Set trap for cleanup on interrupt/error (only if not sourced)
 if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
-    trap cleanup_vm EXIT INT TERM
+    # On INT/TERM (Ctrl+C), always cleanup
+    trap 'SETUP_FAILED=true; cleanup_vm; exit 130' INT TERM
+    # On ERR, mark as failed (cleanup will happen on EXIT)
+    trap 'SETUP_FAILED=true' ERR
+    # On EXIT, only cleanup if failed
+    trap 'cleanup_on_error' EXIT
 fi
 
 echo -e "${GREEN}=== Fedora AWS EC2 VM Setup ===${NC}"

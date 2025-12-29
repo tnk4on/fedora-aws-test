@@ -8,9 +8,10 @@ Fedora Cloud Base VM on Amazon Web Services (EC2) でDev Containerテストを�
 
 ## 構成
 
-- `scripts/setup-fedora-vm.sh`: VM作成とSSH接続確認まで（クリーンな環境）
+- `scripts/setup-fedora-vm.sh`: VM作成とSSH接続確認まで（正常終了時は削除しない）
 - `scripts/run-tests-on-vm.sh`: 既存のVMでテストを実行
-- `scripts/test-fedora-aws.sh`: 上記2つを順次実行（完全自動化）
+- `scripts/test-fedora-aws.sh`: 上記2つを順次実行（完全自動化、終了時に削除）
+- `scripts/cleanup-vm.sh`: VMと関連リソースを手動で削除
 - `.github/workflows/test-fedora.yml`: GitHub Actionsでの実行例
 
 ## 前提条件
@@ -120,8 +121,21 @@ devcontainer up --workspace-folder . --docker-path podman
 
 **インスタンス削除（手動）**:
 ```bash
+# 方法1: cleanup-vm.sh を使用（推奨）
+export INSTANCE_ID=<INSTANCE_ID>
+export SECURITY_GROUP_ID=<SECURITY_GROUP_ID>
+export KEY_NAME=<KEY_NAME>
+./scripts/cleanup-vm.sh
+
+# 方法2: 全てのFedoraテストインスタンスを一括削除
+export DELETE_ALL=true
+./scripts/cleanup-vm.sh
+
+# 方法3: AWS CLIで直接削除
 aws ec2 terminate-instances --instance-ids <INSTANCE_ID> --region <AWS_REGION>
 ```
+
+**注意**: `setup-fedora-vm.sh` は正常終了時にVMを削除しません。インタラクティブにテストした後は、手動で削除してください。
 
 ### 方法2: 自動テスト実行
 
