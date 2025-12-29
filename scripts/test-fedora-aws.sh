@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Configuration
 AWS_REGION="${AWS_REGION:-us-west-2}"
-VM_INSTANCE_TYPE="${VM_INSTANCE_TYPE:-t3.micro}"
+VM_INSTANCE_TYPE="${VM_INSTANCE_TYPE:-t3.medium}"
 VM_DISK_SIZE="${VM_DISK_SIZE:-200}"  # GB
 VM_NAME="${VM_NAME:-fedora-test-$(date +%s)}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-${HOME}/.ssh/ec2_key_${VM_NAME}}"
@@ -102,7 +102,7 @@ export AWS_REGION
 # Setup environment on VM (Node.js, devcontainer CLI, clone repo)
 echo ""
 echo -e "${GREEN}=== Step 2: Setting up test environment on VM ===${NC}"
-ssh $SSH_OPTS -i "$SSH_KEY_PATH" core@"$VM_IP" <<ENDSSH
+ssh $SSH_OPTS -i "$SSH_KEY_PATH" fedora@"$VM_IP" <<ENDSSH
 set -e
 echo "=== Installing Node.js via nvm ==="
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
@@ -125,4 +125,3 @@ echo -e "${GREEN}=== Step 3: Running tests ===${NC}"
 
 echo ""
 echo -e "${GREEN}=== Complete ===${NC}"
-

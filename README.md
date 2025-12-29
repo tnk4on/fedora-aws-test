@@ -1,10 +1,10 @@
 # Fedora AWS Test
 
-Fedora CoreOS VM on Amazon Web Services (EC2) でDev Containerテストを実行するためのスクリプトとGitHub Actionsサンプル。
+Fedora Cloud Base VM on Amazon Web Services (EC2) でDev Containerテストを実行するためのスクリプトとGitHub Actionsサンプル。
 
 ## 概要
 
-このリポジトリは、AWS EC2上にFedora CoreOSインスタンスを作成し、PodmanとDev Container CLIを使用したテストを実行するためのツールを提供します。
+このリポジトリは、AWS EC2上にFedora Cloud Baseインスタンスを作成し、PodmanとDev Container CLIを使用したテストを実行するためのツールを提供します。
 
 ## 構成
 
@@ -95,7 +95,7 @@ chmod +x scripts/setup-fedora-vm.sh
 **手動での次のステップ（VM内で実行）**:
 ```bash
 # SSH接続
-ssh -i ~/.ssh/ec2_key_<timestamp> core@<VM_IP>
+ssh -i ~/.ssh/ec2_key_<timestamp> fedora@<VM_IP>
 
 # 1. nvmをインストール
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
@@ -157,24 +157,31 @@ chmod +x scripts/test-fedora-aws.sh
 
 - ✅ Minimal
 - ✅ Dockerfile
-- ✅ Features (Go)
-- ✅ Docker in Docker
+- ⏭️ Features (Go) - スキップ（デバッグ中）
+- ⏭️ Docker in Docker - スキップ（systemd非対応のため）
 - ✅ Sample Python
 - ✅ Sample Node.js
 - ✅ Sample Go
 
+### スキップされるテストについて
+
+- **Features (Go)**: ディスク容量の問題でスキップ中
+- **Docker in Docker**: docker-in-docker featureはsystemdを必要としますが、Podmanコンテナではsystemdが利用できないためスキップ
+
 ## スクリプトの動作
 
-1. **インスタンス作成**: Fedora CoreOS EC2インスタンスを作成
+1. **インスタンス作成**: Fedora Cloud Base EC2インスタンスを作成
 2. **セキュリティグループ作成**: SSHアクセス用のセキュリティグループを作成
 3. **キーペアインポート**: SSH鍵をAWSキーペアとしてインポート
 4. **SSH接続待機**: インスタンスが起動しSSH接続可能になるまで待機
-5. **環境セットアップ**: 
+5. **ストレージ設定**: 追加ディスクをpodman storageにマウント
+6. **環境セットアップ**: 
+   - git, podman-dockerをインストール
    - Node.js (nvm経由)
    - @devcontainers/cli
    - Podman設定
-6. **テスト実行**: 各テストケースを順次実行
-7. **リソース削除**: テスト完了後、インスタンス、セキュリティグループ、キーペアを自動削除
+7. **テスト実行**: 各テストケースを順次実行
+8. **リソース削除**: テスト完了後、インスタンス、セキュリティグループ、キーペアを自動削除
 
 ## カスタマイズ
 
@@ -192,14 +199,15 @@ TEST_REPO="https://github.com/tnk4on/podman-devcontainer-test.git"
 
 ```bash
 AWS_REGION="us-west-2"
-VM_INSTANCE_TYPE="t3.micro"
+VM_INSTANCE_TYPE="t3.medium"  # デフォルト
 VM_DISK_SIZE="200"  # GB
 ```
 
 **インスタンスタイプの変更**:
 
 ```bash
-export VM_INSTANCE_TYPE="t3.small"  # より多くのメモリとCPU
+export VM_INSTANCE_TYPE="t3.small"  # より少ないリソース
+export VM_INSTANCE_TYPE="t3.large"  # より多いリソース
 ```
 
 ## トラブルシューティング
@@ -231,7 +239,7 @@ aws configure
 ### インスタンス作成エラー
 
 **AMIが見つからない場合**:
-- Fedora CoreOSのAMI所有者ID（125523088429）が正しいか確認
+- Fedora Cloud BaseのAMI所有者ID（125523088429）が正しいか確認
 - リージョンが正しいか確認
 
 **権限エラーの場合**:
@@ -261,4 +269,3 @@ aws ec2 delete-key-pair --key-name <KEY_NAME> --region <AWS_REGION>
 ## ライセンス
 
 MIT
-
