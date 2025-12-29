@@ -90,15 +90,47 @@ sudo usermod -aG docker $USER
 
 Dockerインストール後、devcontainerは自動的にDockerをランタイムとして使用します。
 
+## 検証結果（2024-12-29）
+
+Fedora 43（kernel 6.17.12）+ Podman 5.7.1環境で検証を実施。
+
+| 検証項目 | 結果 | 備考 |
+|---------|------|------|
+| Podman Rootless + docker-in-docker | ❌ 失敗 | `/sys/kernel/security`マウント拒否 |
+| Podman Rootful + docker:dind | ✅ 成功 | `sudo podman run --privileged docker:dind` |
+| Podman Rootless + docker-outside-of-docker | ✅ 成功 | Podmanソケット経由 |
+| devcontainer + docker-outside-of-docker | ✅ 成功 | 推奨構成 |
+
+### 検証詳細
+
+**Rootful Podmanでのdocker-in-docker成功例：**
+```
+=== Docker version ===
+Client: Version: 29.1.3
+Server: Docker Engine - Community Version: 29.1.3
+
+=== Running hello-world ===
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+```
+
+**devcontainer + docker-outside-of-docker成功例：**
+```
+devcontainer exec --workspace-folder . docker run --rm hello-world
+Hello from Docker!
+```
+
 ## 機能比較
 
 | 機能 | docker-in-docker | docker-outside-of-docker |
 |------|------------------|--------------------------|
 | 分離性 | 完全に分離 | ホストと共有 |
-| Podman対応 | ❌ | ✅ |
+| Podman Rootless対応 | ❌ | ✅ |
+| Podman Rootful対応 | ✅ | ✅ |
 | Docker対応 | ✅ | ✅ |
 | パフォーマンス | やや低い | 良好 |
 | セキュリティ | 要`--privileged` | ソケットマウントのみ |
+| devcontainer統合 | ❌（Podman rootless） | ✅ |
 
 ## 検証コマンド
 
